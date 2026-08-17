@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Platform — Scalable System Design</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --bg-elevated: #111827;
+            --bg-card: #111827;
+            --bg-code: #0a0e17;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #38bdf8;
+            --accent-soft: rgba(56, 189, 248, 0.1);
+            --accent-border: rgba(56, 189, 248, 0.25);
+            --border: #1e293b;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --purple: #a78bfa;
+            --orange: #fb923c;
+            --gradient-start: #38bdf8;
+            --gradient-end: #818cf8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* Hero */
+        .hero {
+            position: relative;
+            padding: 100px 24px 80px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(56,189,248,0.06) 0%, transparent 60%);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 700px; height: 450px;
+            background: radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            background: var(--accent-soft);
+            border: 1px solid var(--accent-border);
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 24px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.2rem, 5vw, 3.8rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        .hero-meta {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 48px;
+            flex-wrap: wrap;
+        }
+
+        .hero-meta-item { text-align: center; }
+        .hero-meta-item .value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .hero-meta-item .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 4px;
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(11, 15, 25, 0.9);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 0;
+        }
+
+        .nav-inner {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .nav-inner::-webkit-scrollbar { display: none; }
+
+        .nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 8px;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .nav a:hover, .nav a.active {
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        /* Sections */
+        section {
+            padding: 70px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        section:last-child { border-bottom: none; }
+
+        .section-header {
+            margin-bottom: 48px;
+        }
+
+        .section-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--bg);
+            margin-bottom: 16px;
+        }
+
+        .section-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            max-width: 720px;
+        }
+
+        /* Intro block */
+        .intro-block {
+            background: linear-gradient(135deg, rgba(56,189,248,0.06), rgba(129,140,248,0.04));
+            border: 1px solid var(--accent-border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+        .intro-block strong {
+            color: var(--text-primary);
+        }
+
+        /* Requirement cards */
+        .req-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            transition: border-color 0.2s;
+        }
+        .req-card:hover {
+            border-color: var(--accent-border);
+        }
+        .req-card .req-icon {
+            width: 36px; height: 36px;
+            min-width: 36px;
+            background: var(--accent-soft);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+        .req-card h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .req-card p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Problem statement block */
+        .problem-block {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+        .problem-block p {
+            margin-bottom: 16px;
+        }
+        .problem-block p:last-child {
+            margin-bottom: 0;
+        }
+        .problem-block strong {
+            color: var(--text-primary);
+        }
+        .problem-block ul {
+            margin: 12px 0 12px 24px;
+            color: var(--text-secondary);
+        }
+        .problem-block li {
+            margin-bottom: 8px;
+            line-height: 1.7;
+        }
+        .problem-block li::marker {
+            color: var(--accent);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .card:hover {
+            border-color: var(--accent-border);
+            transform: translateY(-2px);
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card-title .icon {
+            width: 32px; height: 32px;
+            background: var(--accent-soft);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        /* SVG Diagrams */
+        .diagram-container {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            margin: 28px 0;
+            overflow-x: auto;
+        }
+
+        .diagram-container svg {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .diagram-label {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 16px;
+            font-style: italic;
+        }
+
+        /* Tables */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--bg-code);
+            color: var(--accent);
+            font-weight: 600;
+            text-align: left;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+            vertical-align: top;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(56,189,248,0.03); }
+
+        /* Code Blocks */
+        pre {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.7;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        pre::before {
+            content: attr(data-lang);
+            position: absolute;
+            top: 0; right: 0;
+            padding: 6px 12px;
+            background: var(--border);
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            border-bottom-left-radius: 8px;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+        }
+
+        .code-keyword { color: #c678dd; }
+        .code-string { color: #98c379; }
+        .code-function { color: #61afef; }
+        .code-comment { color: #5c6370; font-style: italic; }
+        .code-class { color: #e5c07b; }
+        .code-number { color: #d19a66; }
+
+        /* Tags */
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 6px;
+        }
+        .tag-pattern { background: rgba(52, 211, 153, 0.12); color: var(--success); }
+        .tag-principle { background: rgba(251, 191, 36, 0.12); color: var(--warning); }
+        .tag-aws { background: rgba(56, 189, 248, 0.12); color: var(--accent); }
+
+        /* Grid */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        /* Step List */
+        .step-list {
+            counter-reset: step;
+            list-style: none;
+        }
+        .step-list li {
+            position: relative;
+            padding-left: 60px;
+            padding-bottom: 36px;
+            border-left: 2px solid var(--border);
+            margin-left: 18px;
+        }
+        .step-list li:last-child {
+            border-left: 2px solid transparent;
+            padding-bottom: 0;
+        }
+        .step-list li::before {
+            counter-increment: step;
+            content: counter(step);
+            position: absolute;
+            left: -20px;
+            top: 0;
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--bg);
+        }
+        .step-list h4 {
+            font-size: 1.1rem;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+        .step-list p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        .step-list .code-change {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 12px;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent);
+        }
+
+        /* Scale Cards */
+        .scale-card {
+            background: linear-gradient(135deg, rgba(56,189,248,0.04), rgba(129,140,248,0.04));
+            border: 1px solid var(--accent-border);
+        }
+        .scale-card .card-title { color: var(--accent); }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 60px 24px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        @media (max-width: 768px) {
+            .hero { padding: 60px 20px 40px; }
+            .hero-meta { gap: 24px; }
+            section { padding: 48px 0; }
+            .card { padding: 20px; }
+            pre { padding: 16px; font-size: 0.75rem; }
+            .diagram-container { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hero -->
+    <div class="hero">
+        <div class="hero-badge">
+            <span>⚡</span> System Design Document
+        </div>
+        <h1>Content Platform Architecture</h1>
+        <p>A scalable, versioned, multi-locale content delivery system built on AWS with zero rewrites for new ingestion sources.</p>
+        <div class="hero-meta">
+            <div class="hero-meta-item">
+                <div class="value">200</div>
+                <div class="label">Pages</div>
+            </div>
+            <div class="hero-meta-item">
+                <div class="value">10</div>
+                <div class="label">Publishes / Day</div>
+            </div>
+            <div class="hero-meta-item">
+                <div class="value">20</div>
+                <div class="label">Read QPS</div>
+            </div>
+            <div class="hero-meta-item">
+                <div class="value">∞</div>
+                <div class="label">Scale Headroom</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container nav-inner">
+            <a href="#requirements" class="active">Requirements</a>
+            <a href="#overview">Overview</a>
+            <a href="#architecture">Architecture</a>
+            <a href="#storage">Storage</a>
+            <a href="#ingestion">Ingestion</a>
+            <a href="#read-api">Read API</a>
+            <a href="#onboarding">Onboarding</a>
+            <a href="#scaling">Scaling</a>
+            <a href="#practices">Best Practices</a>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <!-- 0. Requirements -->
+        <section id="requirements">
+            <div class="section-header">
+                <div class="section-number">0</div>
+                <h2>Requirements</h2>
+            </div>
+
+
+
+            <div class="problem-block">
+                <p>Your team runs a <strong>Content Platform</strong>. Product teams publish web pages (title, body, metadata) that apps fetch over a REST API.</p>
+                <p><strong>Today:</strong> One team publishes from an internal admin UI (writes to your platform).</p>
+                <p><strong>Next quarter:</strong> A second team wants to publish from Contentful via webhook when an editor clicks "Publish."</p>
+                <p style="margin-top:20px; color:var(--text-primary); font-weight:600;">Requirements:</p>
+                <ul>
+                    <li>Content is <strong>versioned</strong> — each publish creates a new version; old versions are kept.</li>
+                    <li>Content is <strong>per locale</strong> — en-US and de-DE are published independently.</li>
+                    <li>Apps call: <code>GET /content/{id}?locale=en-US</code> and get the latest published version.</li>
+                    <li><strong>AWS:</strong> DynamoDB (single table), Lambda, S3. Python / FastAPI for the API.</li>
+                    <li><strong>Scale (year 1):</strong> ~200 pages, ~10 publishes/day, ~20 read QPS.</li>
+                    <li><strong>Design:</strong> ingestion → storage → read API, and how a second team (Contentful) onboard without you rewriting the system.</li>
+                </ul>
+            </div>
+            <div class="intro-block">
+                Here is a <strong>production-grade design</strong> for your Content Platform. I have structured it as <strong>Ingestion → Storage → Read API</strong>, with explicit callouts on why each decision is a best practice. The architecture fits your Year-1 scale effortlessly while scaling <strong>1000× without structural changes</strong>.
+            </div>
+
+            <div class="grid-2">
+                <div class="req-card">
+                    <div class="req-icon">📄</div>
+                    <div>
+                        <h4>Content Structure</h4>
+                        <p>Product teams publish web pages with title, body, and metadata that apps fetch over a REST API.</p>
+                    </div>
+                </div>
+                <div class="req-card">
+                    <div class="req-icon">🔖</div>
+                    <div>
+                        <h4>Versioning</h4>
+                        <p>Each publish creates a new version. Old versions are kept and never overwritten.</p>
+                    </div>
+                </div>
+                <div class="req-card">
+                    <div class="req-icon">🌍</div>
+                    <div>
+                        <h4>Per-Locale Publishing</h4>
+                        <p>en-US and de-DE are published independently. Locales do not block each other.</p>
+                    </div>
+                </div>
+                <div class="req-card">
+                    <div class="req-icon">🔌</div>
+                    <div>
+                        <h4>Read API Contract</h4>
+                        <p>Apps call <code>GET /content/{id}?locale=en-US</code> and receive the latest published version.</p>
+                    </div>
+                </div>
+                <div class="req-card">
+                    <div class="req-icon">☁️</div>
+                    <div>
+                        <h4>AWS Stack</h4>
+                        <p>DynamoDB (single table), Lambda, S3. Python / FastAPI for the API layer.</p>
+                    </div>
+                </div>
+                <div class="req-card">
+                    <div class="req-icon">📈</div>
+                    <div>
+                        <h4>Year-1 Scale</h4>
+                        <p>~200 pages, ~10 publishes/day, ~20 read QPS. Design must scale 1000× without rewrites.</p>
+                    </div>
+                </div>
+                <div class="req-card">
+                    <div class="req-icon">🤝</div>
+                    <div>
+                        <h4>Multi-Team Ingestion</h4>
+                        <p>Today: one team via internal admin UI. Next quarter: second team via Contentful webhook. Onboard without rewriting the system.</p>
+                    </div>
+                </div>
+                <div class="req-card">
+                    <div class="req-icon">🏗️</div>
+                    <div>
+                        <h4>Design Coverage</h4>
+                        <p>Ingestion → Storage → Read API, with a clear path for Team 2 (Contentful) to onboard.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 1. Overview -->
+        <section id="overview">
+            <div class="section-header">
+                <div class="section-number">1</div>
+                <h2>Architecture Overview</h2>
+                <p>Three independent paths — ingestion, storage, and read — connected by a canonical data model. New teams plug in without touching core logic.</p>
+            </div>
+
+            <div class="grid-3">
+                <div class="card">
+                    <div class="card-title"><span class="icon">📝</span> Ingestion</div>
+                    <p>Adapters normalize any external source into a canonical model. Webhooks from Contentful, internal admin UI, or future CMSs all converge to one Lambda.</p>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="icon">🗄️</span> Storage</div>
+                    <p>DynamoDB single table stores metadata and version pointers. S3 stores large HTML bodies. Separate concerns, optimal cost, no size limits.</p>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="icon">🚀</span> Read API</div>
+                    <p>FastAPI on Lambda serves content by ID and locale in O(1) time. Immutable versions guarantee consistency; latest pointers guarantee speed.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. System Architecture Diagram -->
+        <section id="architecture">
+            <div class="section-header">
+                <div class="section-number">2</div>
+                <h2>System Architecture</h2>
+                <p>End-to-end data flow from ingestion sources through to consumer applications.</p>
+            </div>
+
+            <div class="diagram-container">
+                <svg viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="boxGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#38bdf8;stop-opacity:0.2" />
+                            <stop offset="100%" style="stop-color:#818cf8;stop-opacity:0.2" />
+                        </linearGradient>
+                        <linearGradient id="successGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#34d399;stop-opacity:0.2" />
+                            <stop offset="100%" style="stop-color:#34d399;stop-opacity:0.05" />
+                        </linearGradient>
+                        <linearGradient id="warnGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:0.2" />
+                            <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:0.05" />
+                        </linearGradient>
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowhead-accent" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#38bdf8" />
+                        </marker>
+                    </defs>
+
+                    <!-- Background zones -->
+                    <rect x="20" y="20" width="280" height="280" rx="12" fill="url(#warnGrad)" stroke="#fbbf24" stroke-width="1" stroke-opacity="0.3"/>
+                    <text x="40" y="50" fill="#fbbf24" font-size="12" font-weight="600" font-family="Inter">INGESTION SOURCES</text>
+
+                    <rect x="340" y="20" width="300" height="280" rx="12" fill="url(#accentGrad)" stroke="#38bdf8" stroke-width="1" stroke-opacity="0.3"/>
+                    <text x="360" y="50" fill="#38bdf8" font-size="12" font-weight="600" font-family="Inter">INGESTION LAYER</text>
+
+                    <rect x="680" y="20" width="300" height="280" rx="12" fill="url(#successGrad)" stroke="#34d399" stroke-width="1" stroke-opacity="0.3"/>
+                    <text x="700" y="50" fill="#34d399" font-size="12" font-weight="600" font-family="Inter">STORAGE LAYER</text>
+
+                    <rect x="340" y="340" width="640" height="260" rx="12" fill="rgba(167,139,250,0.05)" stroke="#a78bfa" stroke-width="1" stroke-opacity="0.3"/>
+                    <text x="360" y="370" fill="#a78bfa" font-size="12" font-weight="600" font-family="Inter">READ LAYER</text>
+
+                    <!-- Ingestion Source: Internal Admin -->
+                    <rect x="50" y="80" width="200" height="70" rx="10" fill="url(#boxGrad)" stroke="#fbbf24" stroke-width="1.5"/>
+                    <text x="150" y="110" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="600" font-family="Inter">Internal Admin UI</text>
+                    <text x="150" y="130" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter">Team 1 — Manual Publish</text>
+
+                    <!-- Ingestion Source: Contentful -->
+                    <rect x="50" y="180" width="200" height="70" rx="10" fill="url(#boxGrad)" stroke="#fbbf24" stroke-width="1.5"/>
+                    <text x="150" y="210" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="600" font-family="Inter">Contentful</text>
+                    <text x="150" y="230" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter">Team 2 — Webhook Publish</text>
+
+                    <!-- Arrow: Internal → API GW -->
+                    <line x1="250" y1="115" x2="370" y2="115" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <text x="310" y="105" text-anchor="middle" fill="#64748b" font-size="10" font-family="JetBrains Mono">POST /ingest</text>
+
+                    <!-- Arrow: Contentful → API GW -->
+                    <line x1="250" y1="215" x2="370" y2="215" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <text x="310" y="235" text-anchor="middle" fill="#64748b" font-size="10" font-family="JetBrains Mono">POST /webhook/contentful</text>
+
+                    <!-- API Gateway -->
+                    <rect x="370" y="80" width="220" height="70" rx="10" fill="url(#boxGrad)" stroke="#38bdf8" stroke-width="1.5"/>
+                    <text x="480" y="110" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="600" font-family="Inter">API Gateway</text>
+                    <text x="480" y="130" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter">Route + Auth + Throttle</text>
+
+                    <!-- Ingestion Lambda -->
+                    <rect x="370" y="180" width="220" height="90" rx="10" fill="url(#boxGrad)" stroke="#38bdf8" stroke-width="1.5"/>
+                    <text x="480" y="205" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="600" font-family="Inter">Ingestion Lambda</text>
+                    <text x="480" y="225" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter">Python · Adapter Pattern</text>
+                    <text x="480" y="240" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter">Canonical Model · TransactWrite</text>
+                    <text x="480" y="255" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter">S3 Put → DDB Write</text>
+
+                    <!-- Arrow: API GW → Lambda -->
+                    <line x1="480" y1="150" x2="480" y2="180" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrowhead-accent)"/>
+
+                    <!-- DynamoDB -->
+                    <rect x="710" y="80" width="240" height="90" rx="10" fill="url(#boxGrad)" stroke="#34d399" stroke-width="1.5"/>
+                    <text x="830" y="110" text-anchor="middle" fill="#34d399" font-size="13" font-weight="600" font-family="Inter">DynamoDB</text>
+                    <text x="830" y="130" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter">Single Table Design</text>
+                    <text x="830" y="148" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="JetBrains Mono">PK: CONTENT#id</text>
+                    <text x="830" y="162" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="JetBrains Mono">SK: LOCALE#l#VERSION#v</text>
+
+                    <!-- S3 -->
+                    <rect x="710" y="200" width="240" height="70" rx="10" fill="url(#boxGrad)" stroke="#34d399" stroke-width="1.5"/>
+                    <text x="830" y="230" text-anchor="middle" fill="#34d399" font-size="13" font-weight="600" font-family="Inter">S3</text>
+                    <text x="830" y="250" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter">HTML Body Storage</text>
+
+                    <!-- Arrow: Lambda → DDB -->
+                    <line x1="590" y1="210" x2="700" y2="125" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrowhead-accent)"/>
+                    <text x="655" y="160" text-anchor="middle" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">TransactWrite</text>
+
+                    <!-- Arrow: Lambda → S3 -->
+                    <line x1="590" y1="235" x2="700" y2="235" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrowhead-accent)"/>
+                    <text x="645" y="225" text-anchor="middle" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">PutObject</text>
+
+                    <!-- Future: EventBridge -->
+                    <rect x="710" y="310" width="240" height="50" rx="8" fill="rgba(251,191,36,0.05)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="6,3"/>
+                    <text x="830" y="340" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="500" font-family="Inter">EventBridge (Future)</text>
+
+                    <!-- Arrow: DDB → EventBridge -->
+                    <line x1="830" y1="170" x2="830" y2="310" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowhead)"/>
+
+                    <!-- Read API Gateway -->
+                    <rect x="370" y="410" width="220" height="70" rx="10" fill="url(#boxGrad)" stroke="#a78bfa" stroke-width="1.5"/>
+                    <text x="480" y="440" text-anchor="middle" fill="#a78bfa" font-size="13" font-weight="600" font-family="Inter">API Gateway</text>
+                    <text x="480" y="460" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter">GET /content/{id}?locale=</text>
+
+                    <!-- Read Lambda -->
+                    <rect x="630" y="410" width="220" height="70" rx="10" fill="url(#boxGrad)" stroke="#a78bfa" stroke-width="1.5"/>
+                    <text x="740" y="440" text-anchor="middle" fill="#a78bfa" font-size="13" font-weight="600" font-family="Inter">Read API Lambda</text>
+                    <text x="740" y="460" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter">FastAPI + Mangum · Python</text>
+
+                    <!-- Consumer Apps -->
+                    <rect x="50" y="410" width="200" height="70" rx="10" fill="url(#boxGrad)" stroke="#fb923c" stroke-width="1.5"/>
+                    <text x="150" y="440" text-anchor="middle" fill="#fb923c" font-size="13" font-weight="600" font-family="Inter">Consumer Apps</text>
+                    <text x="150" y="460" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter">Mobile · Web · Third-party</text>
+
+                    <!-- Arrows: Consumer → Read API GW -->
+                    <line x1="250" y1="445" x2="370" y2="445" stroke="#fb923c" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <text x="310" y="435" text-anchor="middle" fill="#fb923c" font-size="10" font-family="JetBrains Mono">GET /content/123?locale=en-US</text>
+
+                    <!-- Arrow: Read API GW → Read Lambda -->
+                    <line x1="590" y1="445" x2="630" y2="445" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                    <!-- Arrow: Read Lambda → DDB -->
+                    <line x1="740" y1="410" x2="830" y2="170" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <text x="790" y="280" text-anchor="middle" fill="#a78bfa" font-size="9" font-family="JetBrains Mono">GetItem</text>
+
+                    <!-- Arrow: Read Lambda → S3 -->
+                    <line x1="740" y1="480" x2="830" y2="270" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <text x="790" y="380" text-anchor="middle" fill="#a78bfa" font-size="9" font-family="JetBrains Mono">GetObject</text>
+
+                    <!-- Legend -->
+                    <rect x="50" y="530" width="900" height="60" rx="8" fill="var(--bg-code)" stroke="var(--border)" stroke-width="1"/>
+                    <text x="70" y="555" fill="#fbbf24" font-size="11" font-weight="600" font-family="Inter">🟡 Ingestion</text>
+                    <text x="200" y="555" fill="#38bdf8" font-size="11" font-weight="600" font-family="Inter">🔵 Processing</text>
+                    <text x="340" y="555" fill="#34d399" font-size="11" font-weight="600" font-family="Inter">🟢 Storage</text>
+                    <text x="460" y="555" fill="#a78bfa" font-size="11" font-weight="600" font-family="Inter">🟣 Read</text>
+                    <text x="560" y="555" fill="#fb923c" font-size="11" font-weight="600" font-family="Inter">🟠 Consumer</text>
+                    <text x="690" y="555" fill="#94a3b8" font-size="11" font-family="Inter">— Solid: Active Flow</text>
+                    <text x="840" y="555" fill="#94a3b8" font-size="11" font-family="Inter">- - Dashed: Future</text>
+                </svg>
+                <div class="diagram-label">Figure 1: End-to-End System Architecture — Ingestion → Storage → Read</div>
+            </div>
+        </section>
+
+        <!-- 3. Storage -->
+        <section id="storage">
+            <div class="section-header">
+                <div class="section-number">3</div>
+                <h2>Storage Layer</h2>
+                <p>DynamoDB single table + S3. Denormalized for reads, immutable for history, and partitioned by locale for independent publishing.</p>
+            </div>
+
+            <!-- Data Model Diagram -->
+            <div class="diagram-container">
+                <svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="dbGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#1e293b"/>
+                            <stop offset="100%" style="stop-color:#0f172a"/>
+                        </linearGradient>
+                    </defs>
+
+                    <!-- DynamoDB Table Box -->
+                    <rect x="50" y="30" width="380" height="280" rx="12" fill="url(#dbGrad)" stroke="#34d399" stroke-width="2"/>
+                    <text x="80" y="60" fill="#34d399" font-size="14" font-weight="700" font-family="Inter">DynamoDB — ContentPlatform</text>
+                    <text x="80" y="80" fill="#64748b" font-size="11" font-family="Inter">Single Table · On-Demand Capacity</text>
+
+                    <!-- Version History Item -->
+                    <rect x="70" y="100" width="340" height="90" rx="8" fill="#0b1120" stroke="#38bdf8" stroke-width="1"/>
+                    <text x="85" y="122" fill="#38bdf8" font-size="11" font-weight="600" font-family="JetBrains Mono">ITEM TYPE: Version History</text>
+                    <text x="85" y="142" fill="#94a3b8" font-size="10" font-family="JetBrains Mono">PK: CONTENT#homepage</text>
+                    <text x="85" y="158" fill="#94a3b8" font-size="10" font-family="JetBrains Mono">SK: LOCALE#en-US#VERSION#v3</text>
+                    <text x="85" y="174" fill="#64748b" font-size="9" font-family="JetBrains Mono">title, bodyS3Key, metadata, publishedAt</text>
+
+                    <!-- Latest Pointer Item -->
+                    <rect x="70" y="210" width="340" height="80" rx="8" fill="#0b1120" stroke="#fbbf24" stroke-width="1"/>
+                    <text x="85" y="232" fill="#fbbf24" font-size="11" font-weight="600" font-family="JetBrains Mono">ITEM TYPE: Latest Pointer</text>
+                    <text x="85" y="252" fill="#94a3b8" font-size="10" font-family="JetBrains Mono">PK: CONTENT#homepage#LATEST</text>
+                    <text x="85" y="268" fill="#94a3b8" font-size="10" font-family="JetBrains Mono">SK: LOCALE#en-US</text>
+                    <text x="85" y="282" fill="#64748b" font-size="9" font-family="JetBrains Mono">title, bodyS3Key, metadata, version</text>
+
+                    <!-- S3 Box -->
+                    <rect x="480" y="30" width="370" height="280" rx="12" fill="url(#dbGrad)" stroke="#34d399" stroke-width="2"/>
+                    <text x="510" y="60" fill="#34d399" font-size="14" font-weight="700" font-family="Inter">S3 — content-platform-bodies</text>
+                    <text x="510" y="80" fill="#64748b" font-size="11" font-family="Inter">Blob Storage · Lifecycle Rules</text>
+
+                    <!-- S3 Tree -->
+                    <rect x="500" y="100" width="330" height="180" rx="8" fill="#0b1120" stroke="#64748b" stroke-width="1"/>
+                    <text x="520" y="125" fill="#94a3b8" font-size="11" font-family="JetBrains Mono">bodies/</text>
+                    <text x="540" y="145" fill="#94a3b8" font-size="11" font-family="JetBrains Mono">└── homepage/</text>
+                    <text x="560" y="165" fill="#94a3b8" font-size="11" font-family="JetBrains Mono">├── en-US/</text>
+                    <text x="580" y="185" fill="#38bdf8" font-size="10" font-family="JetBrains Mono">│   ├── v1/ → body.html</text>
+                    <text x="580" y="200" fill="#38bdf8" font-size="10" font-family="JetBrains Mono">│   ├── v2/ → body.html</text>
+                    <text x="580" y="215" fill="#fbbf24" font-size="10" font-family="JetBrains Mono">│   └── v3/ → body.html ⬅ latest</text>
+                    <text x="560" y="235" fill="#94a3b8" font-size="11" font-family="JetBrains Mono">└── de-DE/</text>
+                    <text x="580" y="255" fill="#38bdf8" font-size="10" font-family="JetBrains Mono">    └── v1/ → body.html</text>
+
+                    <!-- Arrow: DDB → S3 -->
+                    <line x1="410" y1="160" x2="480" y2="160" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <text x="445" y="150" text-anchor="middle" fill="#64748b" font-size="9" font-family="JetBrains Mono">bodyS3Key</text>
+                </svg>
+                <div class="diagram-label">Figure 2: Data Model — DynamoDB Single Table + S3 Object Hierarchy</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><span class="icon">🔑</span> Schema Design Rationale</div>
+                <p style="margin-bottom:16px;color:var(--text-secondary);">Two access patterns supported: <strong>immutable version history</strong> and <strong>O(1) latest lookup</strong>.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>PK (Partition Key)</th>
+                                <th>SK (Sort Key)</th>
+                                <th>Purpose</th>
+                                <th>Attributes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>CONTENT#&lt;id&gt;</code></td>
+                                <td><code>LOCALE#&lt;locale&gt;#VERSION#&lt;v&gt;</code></td>
+                                <td>Immutable version history</td>
+                                <td>title, bodyS3Key, metadata, publishedAt, version</td>
+                            </tr>
+                            <tr>
+                                <td><code>CONTENT#&lt;id&gt;#LATEST</code></td>
+                                <td><code>LOCALE#&lt;locale&gt;</code></td>
+                                <td>O(1) latest lookup</td>
+                                <td>title, bodyS3Key, metadata, publishedAt, version</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="section-header" style="margin-top:40px;">
+                <h3 style="font-size:1.3rem;margin-bottom:16px;">Why These Decisions Matter</h3>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Decision</th>
+                            <th>Best Practice</th>
+                            <th>Why It Matters</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Dual-write (version + latest)</strong></td>
+                            <td><span class="tag tag-pattern">Denormalization</span></td>
+                            <td>Reads are 20 QPS today but could be 20,000 tomorrow. A <code>GetItem</code> on <code>CONTENT#id#LATEST</code> is O(1) and costs 0.5 RCU.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Immutable versions</strong></td>
+                            <td><span class="tag tag-pattern">Event Sourcing</span></td>
+                            <td>You never UPDATE a version row. Append-only gives a complete audit trail and eliminates concurrency bugs.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>S3 for body, DDB for metadata</strong></td>
+                            <td><span class="tag tag-principle">Right-size Stores</span></td>
+                            <td>DynamoDB items have a 400 KB limit. Offloading blobs to S3 avoids size limits and reduces storage cost by ~90%.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Locale in SK</strong></td>
+                            <td><span class="tag tag-pattern">Multi-tenancy</span></td>
+                            <td><code>de-DE</code> and <code>en-US</code> publish independently. Add <code>fr-FR</code> tomorrow with zero schema changes.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>On-Demand Capacity</strong></td>
+                            <td><span class="tag tag-aws">Pay-per-request</span></td>
+                            <td>At 10 writes/day, provisioned capacity costs more to manage than the data itself. On-demand handles spikes automatically.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 4. Ingestion -->
+        <section id="ingestion">
+            <div class="section-header">
+                <div class="section-number">4</div>
+                <h2>Ingestion Pipeline</h2>
+                <p>The Adapter Pattern makes your core engine source-agnostic. New teams onboard with a single file — no rewrites.</p>
+            </div>
+
+            <!-- Sequence Diagram -->
+            <div class="diagram-container">
+                <svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Actors -->
+                    <rect x="40" y="30" width="120" height="40" rx="8" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5"/>
+                    <text x="100" y="55" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="600" font-family="Inter">Contentful</text>
+
+                    <rect x="240" y="30" width="120" height="40" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+                    <text x="300" y="55" text-anchor="middle" fill="#38bdf8" font-size="12" font-weight="600" font-family="Inter">API Gateway</text>
+
+                    <rect x="440" y="30" width="140" height="40" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+                    <text x="510" y="55" text-anchor="middle" fill="#38bdf8" font-size="12" font-weight="600" font-family="Inter">Ingestion Lambda</text>
+
+                    <rect x="660" y="30" width="100" height="40" rx="8" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+                    <text x="710" y="55" text-anchor="middle" fill="#34d399" font-size="12" font-weight="600" font-family="Inter">S3</text>
+
+                    <rect x="800" y="30" width="100" height="40" rx="8" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+                    <text x="850" y="55" text-anchor="middle" fill="#34d399" font-size="12" font-weight="600" font-family="Inter">DynamoDB</text>
+
+                    <!-- Lifelines -->
+                    <line x1="100" y1="70" x2="100" y2="450" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+                    <line x1="300" y1="70" x2="300" y2="450" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+                    <line x1="510" y1="70" x2="510" y2="450" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+                    <line x1="710" y1="70" x2="710" y2="450" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+                    <line x1="850" y1="70" x2="850" y2="450" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+
+                    <!-- Step 1: Webhook -->
+                    <line x1="100" y1="100" x2="300" y2="100" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <rect x="140" y="85" width="120" height="22" rx="4" fill="#0b1120" stroke="#fbbf24" stroke-width="1"/>
+                    <text x="200" y="100" text-anchor="middle" fill="#fbbf24" font-size="9" font-family="JetBrains Mono">POST /webhook/contentful</text>
+
+                    <!-- Step 2: Route to Lambda -->
+                    <line x1="300" y1="140" x2="510" y2="140" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrowhead-accent)"/>
+                    <rect x="340" y="125" width="130" height="22" rx="4" fill="#0b1120" stroke="#38bdf8" stroke-width="1"/>
+                    <text x="405" y="140" text-anchor="middle" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">Invoke Lambda</text>
+
+                    <!-- Step 3: Verify + Normalize -->
+                    <rect x="460" y="160" width="100" height="40" rx="4" fill="#0b1120" stroke="#64748b" stroke-width="1"/>
+                    <text x="510" y="178" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter">Verify Signature</text>
+                    <text x="510" y="192" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter">Normalize to Canonical</text>
+
+                    <!-- Step 4: S3 Put -->
+                    <line x1="510" y1="220" x2="710" y2="220" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrowhead-accent)"/>
+                    <rect x="570" y="205" width="80" height="22" rx="4" fill="#0b1120" stroke="#38bdf8" stroke-width="1"/>
+                    <text x="610" y="220" text-anchor="middle" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">PutObject</text>
+
+                    <!-- Step 5: S3 Response -->
+                    <line x1="710" y1="250" x2="510" y2="250" stroke="#34d399" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <rect x="570" y="235" width="80" height="22" rx="4" fill="#0b1120" stroke="#34d399" stroke-width="1"/>
+                    <text x="610" y="250" text-anchor="middle" fill="#34d399" font-size="9" font-family="JetBrains Mono">200 OK + Key</text>
+
+                    <!-- Step 6: TransactWrite -->
+                    <line x1="510" y1="290" x2="850" y2="290" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrowhead-accent)"/>
+                    <rect x="620" y="275" width="120" height="22" rx="4" fill="#0b1120" stroke="#38bdf8" stroke-width="1"/>
+                    <text x="680" y="290" text-anchor="middle" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">TransactWriteItems</text>
+
+                    <!-- Step 7: DDB Response -->
+                    <line x1="850" y1="330" x2="510" y2="330" stroke="#34d399" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <rect x="620" y="315" width="120" height="22" rx="4" fill="#0b1120" stroke="#34d399" stroke-width="1"/>
+                    <text x="680" y="330" text-anchor="middle" fill="#34d399" font-size="9" font-family="JetBrains Mono">200 OK (Atomic)</text>
+
+                    <!-- Step 8: Response to API GW -->
+                    <line x1="510" y1="370" x2="300" y2="370" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrowhead-accent)"/>
+                    <rect x="340" y="355" width="130" height="22" rx="4" fill="#0b1120" stroke="#38bdf8" stroke-width="1"/>
+                    <text x="405" y="370" text-anchor="middle" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">200 OK</text>
+
+                    <!-- Step 9: Response to Contentful -->
+                    <line x1="300" y1="410" x2="100" y2="410" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <rect x="140" y="395" width="120" height="22" rx="4" fill="#0b1120" stroke="#fbbf24" stroke-width="1"/>
+                    <text x="200" y="410" text-anchor="middle" fill="#fbbf24" font-size="9" font-family="JetBrains Mono">200 OK</text>
+
+                    <!-- Note -->
+                    <rect x="40" y="440" width="820" height="30" rx="6" fill="rgba(56,189,248,0.05)" stroke="#38bdf8" stroke-width="1" stroke-opacity="0.3"/>
+                    <text x="450" y="460" text-anchor="middle" fill="#38bdf8" font-size="10" font-family="Inter">If S3 fails → abort before DDB. If DDB fails → orphaned S3 object (cheap, cleanup via lifecycle).</text>
+                </svg>
+                <div class="diagram-label">Figure 3: Publish Flow Sequence Diagram — Contentful Webhook to Atomic Storage</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><span class="icon">🔌</span> The Canonical Model</div>
+                <p style="margin-bottom:16px;color:var(--text-secondary);">Every external source translates into this model. The ingestion Lambda only understands this shape.</p>
+                <pre data-lang="python"><code><span class="code-keyword">class</span> <span class="code-class">CanonicalContent</span>(BaseModel):
+    content_id: <span class="code-class">str</span>          <span class="code-comment"># Your platform's ID</span>
+    locale: <span class="code-class">str</span>              <span class="code-comment"># "en-US", "de-DE"</span>
+    title: <span class="code-class">str</span>
+    body: <span class="code-class">str</span>                <span class="code-comment"># Raw HTML/Markdown</span>
+    metadata: <span class="code-class">dict</span>
+    source: <span class="code-class">str</span>             <span class="code-comment"># "internal", "contentful"</span>
+    external_id: <span class="code-class">Optional</span>[<span class="code-class">str</span>] = <span class="code-keyword">None</span></code></pre>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><span class="icon">🧩</span> Adapter Pattern</div>
+                <pre data-lang="python"><code><span class="code-keyword">class</span> <span class="code-class">ContentAdapter</span>(ABC):
+    <span class="code-keyword">@abstractmethod</span>
+    <span class="code-keyword">def</span> <span class="code-function">normalize</span>(<span class="code-keyword">self</span>, payload: <span class="code-class">dict</span>, headers: <span class="code-class">dict</span>) -> CanonicalContent:
+        <span class="code-keyword">pass</span>
+
+    <span class="code-keyword">@abstractmethod</span>
+    <span class="code-keyword">def</span> <span class="code-function">verify</span>(<span class="code-keyword">self</span>, payload: <span class="code-class">dict</span>, headers: <span class="code-class">dict</span>) -> <span class="code-class">bool</span>:
+        <span class="code-comment">"""Webhook signature validation."""</span>
+        <span class="code-keyword">pass</span>
+
+<span class="code-keyword">class</span> <span class="code-class">InternalAdapter</span>(ContentAdapter):
+    <span class="code-comment"># Admin UI already speaks our format</span>
+    <span class="code-keyword">def</span> <span class="code-function">normalize</span>(<span class="code-keyword">self</span>, payload, headers): ...
+
+<span class="code-keyword">class</span> <span class="code-class">ContentfulAdapter</span>(ContentAdapter):
+    <span class="code-comment"># Maps Contentful fields, resolves locales</span>
+    <span class="code-keyword">def</span> <span class="code-function">normalize</span>(<span class="code-keyword">self</span>, payload, headers): ...
+    <span class="code-keyword">def</span> <span class="code-function">verify</span>(<span class="code-keyword">self</span>, payload, headers):
+        <span class="code-comment"># Verify Contentful webhook signature</span>
+        ...</code></pre>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><span class="icon">⚙️</span> Ingestion Lambda Handler</div>
+                <pre data-lang="python"><code><span class="code-keyword">def</span> <span class="code-function">handler</span>(event, context):
+    route = event[<span class="code-string">'path'</span>]  <span class="code-comment"># /ingest or /webhook/contentful</span>
+    payload = json.loads(event[<span class="code-string">'body'</span>])
+    headers = event[<span class="code-string">'headers'</span>]
+
+    <span class="code-comment"># 1. Select adapter by route</span>
+    adapter = adapter_factory.get(route)
+
+    <span class="code-comment"># 2. Verify webhook signature</span>
+    <span class="code-keyword">if not</span> adapter.verify(payload, headers):
+        <span class="code-keyword">return</span> {<span class="code-string">'statusCode'</span>: <span class="code-number">401</span>}
+
+    <span class="code-comment"># 3. Normalize to canonical model</span>
+    content = adapter.normalize(payload, headers)
+
+    <span class="code-comment"># 4. Generate version</span>
+    version = generate_version(content.content_id, content.locale)
+
+    <span class="code-comment"># 5. Write body to S3 FIRST</span>
+    s3_key = <span class="code-string">f"bodies/{content.content_id}/{content.locale}/{version}/body.html"</span>
+    s3.put_object(Bucket=BUCKET, Key=s3_key, Body=content.body)
+
+    <span class="code-comment"># 6. Atomic transaction: version + latest pointer</span>
+    ddb.transact_write_items(
+        TransactItems=[
+            {<span class="code-string">'Put'</span>: {<span class="code-string">'TableName'</span>: TABLE, <span class="code-string">'Item'</span>: {
+                <span class="code-string">'PK'</span>: <span class="code-string">f'CONTENT#{content.content_id}'</span>,
+                <span class="code-string">'SK'</span>: <span class="code-string">f'LOCALE#{content.locale}#VERSION#{version}'</span>,
+                <span class="code-string">'title'</span>: content.title,
+                <span class="code-string">'bodyS3Key'</span>: s3_key,
+                <span class="code-string">'metadata'</span>: content.metadata,
+                <span class="code-string">'publishedAt'</span>: now,
+                <span class="code-string">'version'</span>: version,
+                <span class="code-string">'source'</span>: content.source
+            }}},
+            {<span class="code-string">'Put'</span>: {<span class="code-string">'TableName'</span>: TABLE, <span class="code-string">'Item'</span>: {
+                <span class="code-string">'PK'</span>: <span class="code-string">f'CONTENT#{content.content_id}#LATEST'</span>,
+                <span class="code-string">'SK'</span>: <span class="code-string">f'LOCALE#{content.locale}'</span>,
+                <span class="code-string">'title'</span>: content.title,
+                <span class="code-string">'bodyS3Key'</span>: s3_key,
+                <span class="code-string">'metadata'</span>: content.metadata,
+                <span class="code-string">'publishedAt'</span>: now,
+                <span class="code-string">'version'</span>: version
+            }}}
+        ]
+    )
+
+    <span class="code-keyword">return</span> {<span class="code-string">'statusCode'</span>: <span class="code-number">200</span>}</code></pre>
+            </div>
+
+            <div class="section-header" style="margin-top:40px;">
+                <h3 style="font-size:1.3rem;margin-bottom:16px;">Ingestion Best Practices</h3>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Decision</th>
+                            <th>Best Practice</th>
+                            <th>Why It Matters</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Adapter Pattern</strong></td>
+                            <td><span class="tag tag-pattern">Strategy / OCP</span></td>
+                            <td>New sources (Sanity, Strapi) are a config + adapter file. Zero changes to Lambda handler, DDB schema, or read API.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>TransactWriteItems</strong></td>
+                            <td><span class="tag tag-principle">Atomic Consistency</span></td>
+                            <td>Version history and latest pointer are written together. A crash never leaves a dangling pointer.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Idempotency via version key</strong></td>
+                            <td><span class="tag tag-pattern">Exactly-once</span></td>
+                            <td>Contentful retries on timeout. Deterministic DDB keys make re-delivery a no-op.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>S3 write BEFORE DDB</strong></td>
+                            <td><span class="tag tag-principle">Storage Ordering</span></td>
+                            <td>If S3 fails, abort before touching DDB. If DDB fails, you have an orphaned S3 object (cheap, cleanup via lifecycle rules).</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 5. Read API -->
+        <section id="read-api">
+            <div class="section-header">
+                <div class="section-number">5</div>
+                <h2>Read API</h2>
+                <p>FastAPI on Lambda with O(1) lookups. Separate from ingestion for independent scaling and security.</p>
+            </div>
+
+            <!-- Read Flow Diagram -->
+            <div class="diagram-container">
+                <svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Consumer App -->
+                    <rect x="40" y="100" width="140" height="60" rx="10" fill="#1e293b" stroke="#fb923c" stroke-width="1.5"/>
+                    <text x="110" y="125" text-anchor="middle" fill="#fb923c" font-size="12" font-weight="600" font-family="Inter">Consumer App</text>
+                    <text x="110" y="143" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter">Mobile / Web</text>
+
+                    <!-- API Gateway -->
+                    <rect x="240" y="100" width="140" height="60" rx="10" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5"/>
+                    <text x="310" y="125" text-anchor="middle" fill="#a78bfa" font-size="12" font-weight="600" font-family="Inter">API Gateway</text>
+                    <text x="310" y="143" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter">GET /content/{id}</text>
+
+                    <!-- Read Lambda -->
+                    <rect x="440" y="80" width="140" height="100" rx="10" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5"/>
+                    <text x="510" y="105" text-anchor="middle" fill="#a78bfa" font-size="12" font-weight="600" font-family="Inter">Read API Lambda</text>
+                    <text x="510" y="123" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter">FastAPI + Mangum</text>
+                    <text x="510" y="138" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter">O(1) GetItem</text>
+                    <text x="510" y="153" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter">S3 GetObject</text>
+                    <text x="510" y="168" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter">Return JSON + body</text>
+
+                    <!-- DynamoDB -->
+                    <rect x="640" y="60" width="120" height="70" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+                    <text x="700" y="85" text-anchor="middle" fill="#34d399" font-size="12" font-weight="600" font-family="Inter">DynamoDB</text>
+                    <text x="700" y="103" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="JetBrains Mono">CONTENT#id#LATEST</text>
+                    <text x="700" y="118" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="JetBrains Mono">LOCALE#en-US</text>
+
+                    <!-- S3 -->
+                    <rect x="640" y="160" width="120" height="60" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+                    <text x="700" y="185" text-anchor="middle" fill="#34d399" font-size="12" font-weight="600" font-family="Inter">S3</text>
+                    <text x="700" y="203" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="JetBrains Mono">bodyS3Key → body.html</text>
+
+                    <!-- Arrows -->
+                    <line x1="180" y1="130" x2="240" y2="130" stroke="#fb923c" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <text x="210" y="122" text-anchor="middle" fill="#fb923c" font-size="9" font-family="JetBrains Mono">?locale=en-US</text>
+
+                    <line x1="380" y1="130" x2="440" y2="130" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                    <line x1="580" y1="110" x2="640" y2="95" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <text x="615" y="95" text-anchor="middle" fill="#a78bfa" font-size="9" font-family="JetBrains Mono">GetItem</text>
+
+                    <line x1="580" y1="150" x2="640" y2="175" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <text x="615" y="175" text-anchor="middle" fill="#a78bfa" font-size="9" font-family="JetBrains Mono">GetObject</text>
+
+                    <!-- Response arrow -->
+                    <line x1="440" y1="180" x2="240" y2="160" stroke="#a78bfa" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowhead)"/>
+                    <text x="340" y="185" text-anchor="middle" fill="#a78bfa" font-size="9" font-family="JetBrains Mono">200 OK + body</text>
+                </svg>
+                <div class="diagram-label">Figure 4: Read Flow — O(1) Lookup via Latest Pointer + S3 Body Fetch</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><span class="icon">🐍</span> FastAPI + Mangum</div>
+                <pre data-lang="python"><code><span class="code-keyword">from</span> fastapi <span class="code-keyword">import</span> FastAPI, HTTPException, Query
+<span class="code-keyword">from</span> mangum <span class="code-keyword">import</span> Mangum
+<span class="code-keyword">import</span> boto3
+
+app = FastAPI(title=<span class="code-string">"Content Platform API"</span>)
+ddb = boto3.resource(<span class="code-string">'dynamodb'</span>)
+table = ddb.Table(<span class="code-string">'ContentPlatform'</span>)
+s3 = boto3.client(<span class="code-string">'s3'</span>)
+
+<span class="code-keyword">@app.get</span>(<span class="code-string">"/content/{content_id}"</span>)
+<span class="code-keyword">async def</span> <span class="code-function">get_content</span>(
+    content_id: <span class="code-class">str</span>,
+    locale: <span class="code-class">str</span> = Query(default=<span class="code-string">"en-US"</span>, pattern=<span class="code-string">r'^[a-z]{2}-[A-Z]{2}$'</span>)
+):
+    <span class="code-comment"># O(1) lookup of latest version</span>
+    response = table.get_item(Key={
+        <span class="code-string">'PK'</span>: <span class="code-string">f'CONTENT#{content_id}#LATEST'</span>,
+        <span class="code-string">'SK'</span>: <span class="code-string">f'LOCALE#{locale}'</span>
+    })
+
+    item = response.get(<span class="code-string">'Item'</span>)
+    <span class="code-keyword">if not</span> item:
+        <span class="code-keyword">raise</span> HTTPException(status_code=<span class="code-number">404</span>, detail=<span class="code-string">"Content not found"</span>)
+
+    <span class="code-comment"># Fetch body from S3</span>
+    body_obj = s3.get_object(Bucket=BUCKET, Key=item[<span class="code-string">'bodyS3Key'</span>])
+    body = body_obj[<span class="code-string">'Body'</span>].read().decode(<span class="code-string">'utf-8'</span>)
+
+    <span class="code-keyword">return</span> {
+        <span class="code-string">"id"</span>: content_id,
+        <span class="code-string">"locale"</span>: locale,
+        <span class="code-string">"version"</span>: item[<span class="code-string">'version'</span>],
+        <span class="code-string">"title"</span>: item[<span class="code-string">'title'</span>],
+        <span class="code-string">"body"</span>: body,
+        <span class="code-string">"metadata"</span>: item[<span class="code-string">'metadata'</span>],
+        <span class="code-string">"publishedAt"</span>: item[<span class="code-string">'publishedAt'</span>]
+    }
+
+<span class="code-comment"># Lambda entry point</span>
+handler = Mangum(app, lifespan=<span class="code-string">"off"</span>)</code></pre>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title"><span class="icon">⚡</span> FastAPI + Mangum</div>
+                    <p>Pydantic validation, OpenAPI docs, and async I/O on Lambda. Mangum wraps ASGI for Lambda without code changes.</p>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="icon">🌍</span> Locale as Query Param</div>
+                    <p>Existing callers without <code>?locale=</code> default to <code>en-US</code>. New locales require no URL path changes.</p>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="icon">🔒</span> CQRS-lite</div>
+                    <p>The read API never writes. The ingestion Lambda never reads for clients. Optimize, scale, and secure each path independently.</p>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="icon">🔁</span> Async boto3</div>
+                    <p>Prevents blocking the event loop during S3/DDB calls. Critical when scaling from 20 QPS to 2,000 QPS.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Onboarding -->
+        <section id="onboarding">
+            <div class="section-header">
+                <div class="section-number">6</div>
+                <h2>Contentful Onboarding</h2>
+                <p>How Team 2 plugs in without a single line of core code changing. The Adapter Pattern in action.</p>
+            </div>
+
+            <!-- Onboarding Flow Diagram -->
+            <div class="diagram-container">
+                <svg viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Step 1 -->
+                    <rect x="30" y="60" width="140" height="80" rx="10" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5"/>
+                    <text x="100" y="85" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="600" font-family="Inter">1. Receive Schema</text>
+                    <text x="100" y="105" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter">Contentful shares</text>
+                    <text x="100" y="120" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter">webhook payload</text>
+
+                    <!-- Arrow -->
+                    <line x1="170" y1="100" x2="210" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                    <!-- Step 2 -->
+                    <rect x="210" y="60" width="140" height="80" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+                    <text x="280" y="85" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="600" font-family="Inter">2. Build Adapter</text>
+                    <text x="280" y="105" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="JetBrains Mono">adapters/contentful.py</text>
+                    <text x="280" y="120" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter">+1 file</text>
+
+                    <!-- Arrow -->
+                    <line x1="350" y1="100" x2="390" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                    <!-- Step 3 -->
+                    <rect x="390" y="60" width="140" height="80" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+                    <text x="460" y="85" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="600" font-family="Inter">3. Add Route</text>
+                    <text x="460" y="105" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="JetBrains Mono">POST /webhook/contentful</text>
+                    <text x="460" y="120" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter">+1 config line</text>
+
+                    <!-- Arrow -->
+                    <line x1="530" y1="100" x2="570" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                    <!-- Step 4 -->
+                    <rect x="570" y="60" width="140" height="80" rx="10" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5"/>
+                    <text x="640" y="85" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="600" font-family="Inter">4. Share URL</text>
+                    <text x="640" y="105" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter">Give endpoint +</text>
+                    <text x="640" y="120" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter">secret to Contentful</text>
+
+                    <!-- Arrow -->
+                    <line x1="710" y1="100" x2="750" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                    <!-- Step 5 -->
+                    <rect x="750" y="60" width="140" height="80" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+                    <text x="820" y="85" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600" font-family="Inter">5. Publish</text>
+                    <text x="820" y="105" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter">Editor clicks</text>
+                    <text x="820" y="120" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter">"Publish" → Live!</text>
+                </svg>
+                <div class="diagram-label">Figure 5: Team 2 Onboarding Flow — Zero Core Rewrites</div>
+            </div>
+
+            <ul class="step-list">
+                <li>
+                    <h4>Receive Webhook Schema</h4>
+                    <p>Contentful team shares their webhook payload structure and signing secret.</p>
+                    <span class="code-change">Code change: None</span>
+                </li>
+                <li>
+                    <h4>Implement ContentfulAdapter</h4>
+                    <p>Create <code>adapters/contentful.py</code> that maps Contentful fields to the canonical model.</p>
+                    <span class="code-change">Code change: +1 file</span>
+                </li>
+                <li>
+                    <h4>Add API Gateway Route</h4>
+                    <p>Register <code>POST /webhook/contentful</code> in API Gateway / SAM / Terraform.</p>
+                    <span class="code-change">Code change: +1 route config</span>
+                </li>
+                <li>
+                    <h4>Share Webhook URL</h4>
+                    <p>Provide the endpoint and secret to the Contentful team for their webhook configuration.</p>
+                    <span class="code-change">Code change: None</span>
+                </li>
+                <li>
+                    <h4>Publish</h4>
+                    <p>Contentful editor clicks "Publish" → webhook fires → content goes live instantly.</p>
+                    <span class="code-change">Code change: None</span>
+                </li>
+            </ul>
+
+            <div class="card" style="margin-top:32px;">
+                <div class="card-title"><span class="icon">🎯</span> The Principle at Work</div>
+                <p style="color:var(--text-secondary);"><strong>Inversion of Control:</strong> Your platform defines the contract. External teams conform to it. You don't chase their schemas. If a third team comes with Sanity CMS next quarter — add <code>adapters/sanity.py</code> and a route. Done.</p>
+            </div>
+        </section>
+
+        <!-- 7. Scaling -->
+        <section id="scaling">
+            <div class="section-header">
+                <div class="section-number">7</div>
+                <h2>Scaling Path</h2>
+                <p>Your Year-1 numbers are tiny, but the design is already ready. Here is what you <em>add</em>, not rewrite.</p>
+            </div>
+
+            <div class="grid-2">
+                <div class="card scale-card">
+                    <div class="card-title">📊 DynamoDB Capacity</div>
+                    <p><strong>Now:</strong> On-Demand<br><strong>At 2,000 QPS:</strong> Switch to Provisioned + Auto-Scaling via CloudWatch alarms.</p>
+                </div>
+                <div class="card scale-card">
+                    <div class="card-title">⚡ API Caching</div>
+                    <p><strong>Now:</strong> Direct Lambda reads<br><strong>At scale:</strong> CloudFront in front of API GW with <code>max-age=60</code> on read responses.</p>
+                </div>
+                <div class="card scale-card">
+                    <div class="card-title">🧠 Application Cache</div>
+                    <p><strong>Now:</strong> None<br><strong>At scale:</strong> ElastiCache (Redis) or DAX to cache latest pointers for 30s.</p>
+                </div>
+                <div class="card scale-card">
+                    <div class="card-title">🖥️ Compute</div>
+                    <p><strong>Now:</strong> Lambda<br><strong>At scale:</strong> Fargate/ECS with FastAPI when cold starts hurt; ALB replaces API GW.</p>
+                </div>
+                <div class="card scale-card">
+                    <div class="card-title">📡 Async Invalidation</div>
+                    <p><strong>Now:</strong> Optional EventBridge<br><strong>At scale:</strong> EventBridge + SQS for async cache warming on every publish.</p>
+                </div>
+                <div class="card scale-card">
+                    <div class="card-title">🔐 Security</div>
+                    <p><strong>Now:</strong> Basic IAM<br><strong>At scale:</strong> Least-privilege IAM — Ingestion: DDB Write + S3 Put only. Read: DDB Read + S3 Get only.</p>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:24px; background: linear-gradient(135deg, rgba(52,211,153,0.08), rgba(52,211,153,0.02)); border-color: rgba(52,211,153,0.2);">
+                <div class="card-title" style="color:var(--success);"><span class="icon" style="background:rgba(52,211,153,0.15);">✓</span> The Golden Rule</div>
+                <p style="color:var(--text-secondary);"><strong>Nothing above changes the schema, the adapter pattern, or the API contract.</strong> The architecture scales by adding infrastructure, not rewriting logic.</p>
+            </div>
+        </section>
+
+        <!-- 8. Best Practices -->
+        <section id="practices">
+            <div class="section-header">
+                <div class="section-number">8</div>
+                <h2>Best Practices Cheat Sheet</h2>
+                <p>Every architectural decision mapped to the principle it follows.</p>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:50px;">#</th>
+                            <th>Practice</th>
+                            <th>Where Applied</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="text-align:center;font-weight:700;color:var(--accent);">1</td>
+                            <td><strong>Single Table Design</strong></td>
+                            <td>One DDB table for all content; no joins, no cross-table transactions</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center;font-weight:700;color:var(--accent);">2</td>
+                            <td><strong>Denormalized Read Model</strong></td>
+                            <td><code>CONTENT#id#LATEST</code> item for O(1) reads</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center;font-weight:700;color:var(--accent);">3</td>
+                            <td><strong>Immutable Versioning</strong></td>
+                            <td>Append-only version rows; full history preserved</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center;font-weight:700;color:var(--accent);">4</td>
+                            <td><strong>Adapter Pattern</strong></td>
+                            <td><code>InternalAdapter</code>, <code>ContentfulAdapter</code> → same canonical model</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center;font-weight:700;color:var(--accent);">5</td>
+                            <td><strong>Open/Closed Principle</strong></td>
+                            <td>New ingestion sources = new adapter file, zero core changes</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center;font-weight:700;color:var(--accent);">6</td>
+                            <td><strong>Blob Offloading</strong></td>
+                            <td>S3 for HTML bodies, DDB for metadata</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center;font-weight:700;color:var(--accent);">7</td>
+                            <td><strong>Atomic Transactions</strong></td>
+                            <td><code>TransactWriteItems</code> for version + latest pointer</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center;font-weight:700;color:var(--accent);">8</td>
+                            <td><strong>Idempotent Ingestion</strong></td>
+                            <td>Deterministic DDB keys survive webhook retries</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center;font-weight:700;color:var(--accent);">9</td>
+                            <td><strong>CQRS-lite</strong></td>
+                            <td>Separate ingestion Lambda and read API; independent scaling</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center;font-weight:700;color:var(--accent);">10</td>
+                            <td><strong>Locale as Dimension</strong></td>
+                            <td>SK includes locale; independent publish pipelines</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center;font-weight:700;color:var(--accent);">11</td>
+                            <td><strong>Least Privilege IAM</strong></td>
+                            <td>Ingestion: DDB Write + S3 Put. Read: DDB Read + S3 Get only</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center;font-weight:700;color:var(--accent);">12</td>
+                            <td><strong>Structured Logging</strong></td>
+                            <td>JSON logs with <code>content_id</code>, <code>locale</code>, <code>version</code>, <code>source</code> for traceability</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Content Platform Architecture · Designed for Scale · Ready for Team 2</p>
+    </div>
+
+    <script>
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav a');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (scrollY >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
